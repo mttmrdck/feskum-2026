@@ -1,0 +1,14 @@
+{
+  // Static-assets-only Worker: serves the Next.js export in ./out.
+  // No `main` script, so nothing executes per request.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "feskum-2026",
+  "compatibility_date": "2026-11-04",
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
