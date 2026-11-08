@@ -1,0 +1,364 @@
+@import "tailwindcss";
+
+/* ───────────────────────────── Design tokens ─────────────────────────────
+   Base: warm cream paper + deep navy ink. Colour arrives through category
+   palettes (src/lib/palette.ts), scoped per scene with --stage/--accent. */
+:root {
+  --cream: #f6f2ec;
+  --cream-2: #ebe3d3;
+  --paper: #fbf8f2;
+  --ink: #0e1433;
+  --ink-2: #39406a;
+  --ink-3: #6b7096;
+  --cobalt: #1f3bff;
+  --orange: #ff6a2b;
+  --coral: #ff7a61;
+  --yellow: #ffd23f;
+  --emerald: #19c27a;
+  --lavender: #bba9ff;
+  --violet: #5b2bd6;
+  --navy: #101a46;
+  --champagne: #e8cd95;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --gutter: clamp(16px, 4vw, 56px);
+}
+
+@theme inline {
+  --color-cream: var(--cream);
+  --color-cream-2: var(--cream-2);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-cobalt: var(--cobalt);
+  --color-orange: var(--orange);
+  --color-coral: var(--coral);
+  --color-yellow: var(--yellow);
+  --color-emerald: var(--emerald);
+  --color-lavender: var(--lavender);
+  --color-violet: var(--violet);
+  --color-navy: var(--navy);
+  --color-champagne: var(--champagne);
+  --font-sans: var(--font-bricolage);
+  --font-display: var(--font-bricolage);
+}
+
+/* Atmosphere colours are registered so they interpolate when re-tinted. */
+@property --atm-1 { syntax: "<color>"; inherits: true; initial-value: #cfc2ff; }
+@property --atm-2 { syntax: "<color>"; inherits: true; initial-value: #ffc9ae; }
+@property --atm-3 { syntax: "<color>"; inherits: true; initial-value: #bcd3ff; }
+@property --atm-4 { syntax: "<color>"; inherits: true; initial-value: #ffe3a3; }
+
+html {
+  background: var(--cream);
+  color-scheme: light;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+}
+html.scroll-locked { overflow: hidden; }
+
+/* Body stays transparent so the fixed atmosphere (z -10) shows through. */
+body {
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-variation-settings: "opsz" 14;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+::selection { background: var(--yellow); color: var(--ink); }
+
+:focus-visible {
+  outline: 2.5px solid var(--cobalt);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* Paper grain: static, makes flat colour and glass read as material. */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  /* Plain alpha, no blend mode: a fixed full-screen blend would force the
+     whole page to re-composite on every scrolled frame. */
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Type and glass live in the components layer so Tailwind utilities
+   (leading-*, text-*, absolute, bg-*) can still override them. */
+@layer components {
+/* ───────────────────────────── Typography ───────────────────────────── */
+/* Poster: condensed, heavy, tight. Bricolage's width axis does the work. */
+.poster {
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-variation-settings: "opsz" 96, "wdth" 75;
+  letter-spacing: -0.035em;
+  line-height: 0.86;
+  text-transform: uppercase;
+}
+/* Headline: Bricolage at display optical size, slightly narrowed and
+   tightly tracked. Weight carries hierarchy; a light weight is the "turn". */
+.headline {
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-weight: 650;
+  font-optical-sizing: auto;
+  font-stretch: 92%;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
+}
+/* Editorial voice: the same family, light and open (taglines, quotes). */
+.serif {
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-weight: 300;
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+/* Tracked small caps for names on glass, after the reference's card labels. */
+.caps {
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+/* Metadata: Bricolage in sentence case with tabular figures. No mono caps. */
+.label {
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  font-variation-settings: "opsz" 12;
+  font-variant-numeric: tabular-nums;
+}
+.tnum { font-variant-numeric: tabular-nums; }
+.outline-text {
+  color: transparent;
+  -webkit-text-stroke: 0.022em var(--stroke, var(--ink));
+}
+
+/* ─────────────────────────── Glass material system ───────────────────────────
+   Five treatments. Every glass = tint + backdrop blur + angled rim light +
+   inner highlight/shadow + drop shadow. Rim and specular are pseudo-elements
+   so content never needs extra wrappers. Declare ONLY unprefixed
+   backdrop-filter; Lightning CSS adds the -webkit- prefix (and drops the
+   unprefixed one if both are written). */
+.glass {
+  position: relative;
+  isolation: isolate;
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--rim-w, 1px);
+  background: linear-gradient(
+    var(--rim-angle, 140deg),
+    rgba(255, 255, 255, var(--rim-hi, 0.75)) 0%,
+    rgba(255, 255, 255, 0.12) 30%,
+    rgba(255, 255, 255, 0.04) 60%,
+    rgba(255, 255, 255, var(--rim-lo, 0.35)) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Clear frost: colour behind it transmits almost untouched. */
+.glass-clear {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12));
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -14px 28px -18px rgba(255, 255, 255, 0.35),
+    0 1px 2px rgba(14, 20, 51, 0.08),
+    0 20px 50px -24px rgba(14, 20, 51, 0.45);
+}
+
+/* Tinted: coloured glass. Set --tint (defaults to the scene accent). */
+.glass-tint {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 55%),
+    color-mix(in oklab, var(--tint, var(--accent, var(--cobalt))) 52%, transparent);
+  backdrop-filter: blur(20px) saturate(190%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -20px 40px -24px color-mix(in oklab, var(--tint, var(--accent, var(--cobalt))) 80%, black),
+    0 24px 60px -28px color-mix(in oklab, var(--tint, var(--accent, var(--cobalt))) 70%, black);
+  --rim-hi: 0.8;
+}
+
+/* Solid: frosted but near-opaque, for long text and controls on busy ground. */
+.glass-solid {
+  background: linear-gradient(170deg, rgba(255, 253, 248, 0.9), rgba(250, 245, 236, 0.78));
+  backdrop-filter: blur(26px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 1px 2px rgba(14, 20, 51, 0.06),
+    0 24px 60px -30px rgba(14, 20, 51, 0.4);
+  --rim-hi: 1;
+  --rim-lo: 0.5;
+}
+
+/* Ink: smoked glass for light text over photography. */
+.glass-ink {
+  background: linear-gradient(170deg, rgba(14, 20, 51, 0.38), rgba(14, 20, 51, 0.62));
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  --rim-hi: 0.45;
+  --rim-lo: 0.12;
+}
+
+/* Holographic: iridescent rim that drifts with --holo (set from pointer/slide). */
+.glass-holo::before {
+  --rim-w: 1.5px;
+  background: conic-gradient(
+    from calc(var(--holo, 0) * 1deg + 120deg),
+    #ffffffcc,
+    #9fd8ff,
+    #c6a8ff,
+    #ffb3c7,
+    #ffe39a,
+    #b6ffd9,
+    #ffffffcc
+  );
+}
+
+/* Luminous glass: the signature material (after the reference video).
+   Near-black translucent body tinted by its light, a faint diagonal sheen,
+   and a 1px edge that is cool at the top and burns in the light's colour at
+   the bottom, where the light enters the slab. */
+.lum-glass {
+  background:
+    linear-gradient(112deg, transparent 32%, rgba(255, 255, 255, 0.06) 44%, rgba(255, 255, 255, 0.015) 52%, transparent 60%),
+    linear-gradient(180deg, color-mix(in oklab, var(--stage) 72%, transparent), color-mix(in oklab, var(--stage) 90%, transparent));
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -30px 60px -40px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+.lum-glass::before {
+  --rim-w: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    color-mix(in oklab, var(--accent) 25%, rgba(255, 255, 255, 0.08)) 40%,
+    color-mix(in oklab, var(--accent) 85%, white) 100%
+  );
+}
+.lum-panel {
+  background: linear-gradient(170deg, color-mix(in oklab, var(--stage) 55%, transparent), color-mix(in oklab, var(--stage) 80%, transparent));
+  backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --rim-hi: 0.35;
+  --rim-lo: 0.1;
+}
+
+/* Chromatic edge: a thin dispersion fringe, as thick glass splits light. */
+.glass-prism {
+  box-shadow:
+    inset 1.5px 0 0 rgba(120, 200, 255, 0.55),
+    inset -1.5px 0 0 rgba(255, 150, 90, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 30px 70px -30px rgba(0, 0, 0, 0.55);
+}
+
+/* Specular sheen follows --mx/--my. */
+.specular::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(
+    circle at var(--mx, 20%) var(--my, 0%),
+    rgba(255, 255, 255, 0.45),
+    rgba(255, 255, 255, 0.08) 30%,
+    transparent 60%
+  );
+  mix-blend-mode: soft-light;
+}
+
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-clear { background: rgba(255, 255, 255, 0.72); }
+  .glass-tint { background: color-mix(in oklab, var(--tint, var(--accent, var(--cobalt))) 88%, white); }
+  .glass-solid { background: var(--paper); }
+  .glass-ink { background: rgba(14, 20, 51, 0.88); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-clear, .glass-tint, .glass-solid, .glass-ink { backdrop-filter: none; }
+  .glass-clear, .glass-solid { background: var(--paper); }
+  .glass-tint { background: color-mix(in oklab, var(--tint, var(--accent, var(--cobalt))) 92%, white); }
+  .glass-ink { background: rgb(14, 20, 51); }
+}
+@media (prefers-contrast: more) {
+  .glass::before { background: currentColor; }
+}
+
+/* ───────────────────────────── Interactions ───────────────────────────── */
+.pressable {
+  transition: transform 160ms var(--ease-out), background-color 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+.pressable:active { transform: scale(0.97); }
+
+/* ───────────────────────────── Atmosphere ───────────────────────────── */
+.atmosphere {
+  transition: --atm-1 1.4s var(--ease-out), --atm-2 1.4s var(--ease-out), --atm-3 1.4s var(--ease-out), --atm-4 1.4s var(--ease-out);
+}
+.atm-field {
+  position: absolute;
+  width: 75vmax;
+  height: 75vmax;
+  border-radius: 9999px;
+  opacity: 0.75;
+  will-change: transform;
+}
+.atm-1 { left: -22vmax; top: -26vmax; background: radial-gradient(closest-side, var(--atm-1), transparent); animation: drift-a 38s ease-in-out infinite alternate; }
+.atm-2 { right: -24vmax; top: -18vmax; background: radial-gradient(closest-side, var(--atm-2), transparent); animation: drift-b 44s ease-in-out infinite alternate; }
+.atm-3 { left: -16vmax; bottom: -32vmax; background: radial-gradient(closest-side, var(--atm-3), transparent); animation: drift-b 52s ease-in-out infinite alternate-reverse; }
+.atm-4 { right: -20vmax; bottom: -30vmax; background: radial-gradient(closest-side, var(--atm-4), transparent); animation: drift-a 47s ease-in-out infinite alternate-reverse; }
+@keyframes drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(8vmax, 6vmax, 0) scale(1.12); }
+}
+@keyframes drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.05); }
+  to { transform: translate3d(-7vmax, 9vmax, 0) scale(0.94); }
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Light pools: radial gradients, painted once, no filter cost. */
+.pool { position: absolute; border-radius: 9999px; pointer-events: none; }
+
+.hero-shader > div,
+.hero-shader canvas { width: 100%; height: 100%; }
+
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.marquee { animation: marquee var(--marquee-dur, 40s) linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .marquee, .atm-field { animation: none; }
+  .pressable:active { transform: none; }
+}
